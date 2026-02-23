@@ -46,7 +46,7 @@ pipeline {
                             bat 'mvn test -Dgroups=regression'
                         }
                         else {
-                            bat 'mvn test'
+                            bat 'mvn -q test'
                         }
                     }
                 }
