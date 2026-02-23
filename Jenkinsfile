@@ -58,11 +58,17 @@ pipeline {
     }
 
     post {
-        always {
-            echo "=========================================="
-            echo "Allure Report URL:"
-            echo "https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${BUILD_FOLDER}/index.html"
-            echo "=========================================="
+    always {
+        script {
+            if (env.S3_BUCKET) {
+                echo "=========================================="
+                echo "Allure Report URL:"
+                echo "https://${env.S3_BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${env.BUILD_FOLDER}/index.html"
+                echo "=========================================="
+            } else {
+                echo "Build failed before environment initialization."
+            }
         }
     }
+}
 }
