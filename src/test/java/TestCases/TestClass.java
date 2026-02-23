@@ -24,21 +24,17 @@ public class TestClass extends BaseClass {
     @Test
     public void verifySearchAndSelectProduct() {
 
-        // ===============================
-        // 1️⃣ Close Login Popup (if present)
-        // ===============================
+        
+        // Close Login Popup (if present)
         LoginPage login = new LoginPage(driver);
         login.closePopupIfPresent();
 
-        // ===============================
-        // 2️⃣ Search Product
-        // ===============================
+       
+        // Search Product
         HomePage home = new HomePage(driver);
         home.searchProduct("iphone");
 
-        // ===============================
-        // 3️⃣ Handle Search Results
-        // ===============================
+        //  Handle Search Results
         SearchResultsPage searchResult = new SearchResultsPage(driver);
 
         int total = searchResult.getTotalResults();
@@ -47,9 +43,9 @@ public class TestClass extends BaseClass {
         searchResult.printAllProductTitles();
         searchResult.clickFirstProduct();
 
-        // ===============================
-        // 4️⃣ Switch to Product Tab
-        // ===============================
+   
+        // Switch to Product Tab
+  
         String parentWindow = driver.getWindowHandle();
         Set<String> allWindows = driver.getWindowHandles();
 
@@ -60,15 +56,14 @@ public class TestClass extends BaseClass {
             }
         }
 
-        // ===============================
-        // 5️⃣ Wait for Product Page Load
-        // ===============================
+        // Wait for Product Page Load
+     
         new WebDriverWait(driver, Duration.ofSeconds(25))
                 .until(d -> driver.getCurrentUrl().toLowerCase().contains("iphone"));
 
-        // ===============================
-        // 6️⃣ Product Page Actions (try multiple strategies)
-        // ===============================
+      
+        // Product Page Actions (try multiple strategies)
+      
         ProductDetailsPage pdp = new ProductDetailsPage(driver);
         CartPage cart = new CartPage(driver);
 
