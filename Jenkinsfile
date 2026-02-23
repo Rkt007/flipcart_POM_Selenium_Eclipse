@@ -1,13 +1,13 @@
 pipeline {
 
     agent {
-        docker {
-            image '102783063324.dkr.ecr.eu-north-1.amazonaws.com/flipcart-pom-framework-selenium-eclipse:latest'
-            args '-u root --ipc=host --entrypoint=""'
-            reuseNode true
-            alwaysPull true
-        }
+    docker {
+        image '102783063324.dkr.ecr.eu-north-1.amazonaws.com/flipcart-pom-framework-selenium-eclipse:latest'
+        args '-u 1000:1000 --ipc=host --entrypoint=""'
+        reuseNode true
+        alwaysPull true
     }
+}
 
     options {
         timestamps()
