@@ -39,7 +39,7 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
 
         // 🔥 Force disable DEBUG logs globally
-        JAVA_TOOL_OPTIONS = "-Dlogging.level.root=ERROR -Dlogging.level.org.apache.hc=ERROR -Dlogging.level.org.apache.http=ERROR -Dorg.slf4j.simpleLogger.defaultLogLevel=error"
+        JAVA_TOOL_OPTIONS = "-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog"
     }
 
     stages {
