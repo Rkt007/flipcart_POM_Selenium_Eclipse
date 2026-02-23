@@ -1,126 +1,114 @@
 pipeline {
-
-    agent {
-        docker {
-            image '102783063324.dkr.ecr.eu-north-1.amazonaws.com/selenium-testng-framework:latest'
-            args '-u root --ipc=host --entrypoint=""'
-            reuseNode true
-        }
-    }
-
-    options {
-        timestamps()
-    }
-
-    triggers {
-        cron('''
-            H 9 * * 1-5
-            H 11 * * 6
-        ''')
-    }
+    agent any
 
     parameters {
         choice(
             name: 'TEST_TYPE',
-            choices: ['smoke', 'regression', 'all'],
-            description: 'Select which test suite to run (Manual Trigger Only)'
+            choices: ['smoke', 'regression', 'others'],
+            description: 'Select which Selenium TestNG tests to run'
         )
     }
 
-    environment {
-        S3_BUCKET = "rahul-selenium-reports-2026"
-        BUILD_FOLDER = "build-${BUILD_NUMBER}"
+    triggers {
+        cron('H 2 * * *')
+    }
 
-        AWS_DEFAULT_REGION = "eu-north-1"
-        AWS_REGION = "eu-north-1"
-
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+    tools {
+        maven 'Maven'      // Configure this in Jenkins Global Tool Config
+        jdk 'JDK17'        // Configure this in Jenkins Global Tool Config
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                checkout scm
+                git branch: 'master',
+                    url: 'https://github.com/Rkt007/flipcart_POM_Selenium_Eclipse.git'
             }
         }
 
-        stage('Determine Test Suite') {
+        stage('Build Project') {
             steps {
-                script {
-
-                    if (env.BUILD_CAUSE_TIMERTRIGGER) {
-
-                        echo "Scheduled run detected"
-
-                        def day = sh(script: "date +%u", returnStdout: true).trim()
-
-                        if (day == "6") {
-                            env.MVN_COMMAND = "mvn test -Dgroups=regression"
-                        } else {
-                            env.MVN_COMMAND = "mvn test -Dgroups=smoke"
-                        }
-
-                    } else {
-
-                        echo "Manual run detected"
-
-                        if (params.TEST_TYPE == "smoke") {
-                            env.MVN_COMMAND = "mvn test -Dgroups=smoke"
-                        }
-                        else if (params.TEST_TYPE == "regression") {
-                            env.MVN_COMMAND = "mvn test -Dgroups=regression"
-                        }
-                        else {
-                            env.MVN_COMMAND = "mvn test"
-                        }
-                    }
-                }
+                bat 'mvn clean compile'
             }
         }
 
         stage('Run Selenium Tests') {
             steps {
-                script {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    script {
+                        def testType = params.TEST_TYPE ?: 'smoke'
 
-                    def exitCode = sh(
-                        script: """
-                            echo "Running: ${env.MVN_COMMAND}"
-                            ${env.MVN_COMMAND}
-                        """,
-                        returnStatus: true
-                    )
-
-                    sh """
-                        echo "Generating Allure Report..."
-                        mvn allure:report || true
-                    """
-
-                    if (exitCode != 0) {
-                        currentBuild.result = 'FAILURE'
+                        if (testType == 'smoke') {
+                            bat 'mvn test -Dgroups=smoke'
+                        }
+                        else if (testType == 'regression') {
+                            bat 'mvn test -Dgroups=regression'
+                        }
+                        else {
+                            bat 'mvn test'
+                        }
                     }
                 }
-            }
-        }
-
-        stage('Upload Allure Report to S3') {
-            steps {
-                sh '''
-                    echo "Uploading Allure report to S3..."
-                    aws s3 sync target/site/allure-maven-plugin/ \
-                        s3://${S3_BUCKET}/${BUILD_FOLDER}/ --delete
-                '''
             }
         }
     }
 
     post {
+
         always {
-            echo "=============================="
-            echo "Allure report available at:"
-            echo "https://${env.S3_BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${env.BUILD_FOLDER}/index.html"
-            echo "=============================="
+            junit 'target/surefire-reports/*.xml'
+
+            archiveArtifacts artifacts: 'target/surefire-reports/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'test-output/**', allowEmptyArchive: true
+        }
+
+        success {
+            emailext(
+                to: 'rahul.rkt007@gmail.com',
+                subject: "✅ Jenkins SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """Hi Rahul,
+
+Jenkins build SUCCESS ✅
+
+All Selenium tests passed.
+
+Build URL:
+${env.BUILD_URL}
+"""
+            )
+        }
+
+        unstable {
+            emailext(
+                to: 'rahul.rkt007@gmail.com',
+                subject: "⚠️ Jenkins UNSTABLE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """Hi Rahul,
+
+Some Selenium tests failed ⚠️
+
+Please check TestNG report.
+
+Build URL:
+${env.BUILD_URL}
+"""
+            )
+        }
+
+        failure {
+            emailext(
+                to: 'rahul.rkt007@gmail.com',
+                subject: "❌ Jenkins FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """Hi Rahul,
+
+Selenium execution FAILED ❌
+
+Please check console logs and reports.
+
+Build URL:
+${env.BUILD_URL}
+"""
+            )
         }
     }
 }
