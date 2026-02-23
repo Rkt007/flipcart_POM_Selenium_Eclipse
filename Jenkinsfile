@@ -13,11 +13,6 @@ pipeline {
         cron('H 2 * * *')
     }
 
-    tools {
-        maven 'Maven'      // Configure this in Jenkins Global Tool Config
-        jdk 'JDK17'        // Configure this in Jenkins Global Tool Config
-    }
-
     stages {
 
         stage('Checkout Code') {
@@ -27,7 +22,14 @@ pipeline {
             }
         }
 
-        stage('Build Project') {
+        stage('Verify Java & Maven') {
+            steps {
+                bat 'java -version'
+                bat 'mvn -version'
+            }
+        }
+
+        stage('Clean & Build') {
             steps {
                 bat 'mvn clean compile'
             }
@@ -35,9 +37,10 @@ pipeline {
 
         stage('Run Selenium Tests') {
             steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    script {
-                        def testType = params.TEST_TYPE ?: 'smoke'
+                script {
+                    def testType = params.TEST_TYPE ?: 'smoke'
+
+                    catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
 
                         if (testType == 'smoke') {
                             bat 'mvn test -Dgroups=smoke'
@@ -57,7 +60,7 @@ pipeline {
     post {
 
         always {
-            junit 'target/surefire-reports/*.xml'
+            junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
 
             archiveArtifacts artifacts: 'target/surefire-reports/**', allowEmptyArchive: true
             archiveArtifacts artifacts: 'test-output/**', allowEmptyArchive: true
@@ -66,12 +69,12 @@ pipeline {
         success {
             emailext(
                 to: 'rahul.rkt007@gmail.com',
-                subject: "✅ Jenkins SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                subject: "Jenkins SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: """Hi Rahul,
 
-Jenkins build SUCCESS ✅
+Selenium build SUCCESS.
 
-All Selenium tests passed.
+All tests passed.
 
 Build URL:
 ${env.BUILD_URL}
@@ -82,10 +85,10 @@ ${env.BUILD_URL}
         unstable {
             emailext(
                 to: 'rahul.rkt007@gmail.com',
-                subject: "⚠️ Jenkins UNSTABLE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                subject: "Jenkins UNSTABLE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: """Hi Rahul,
 
-Some Selenium tests failed ⚠️
+Some tests failed.
 
 Please check TestNG report.
 
@@ -98,12 +101,12 @@ ${env.BUILD_URL}
         failure {
             emailext(
                 to: 'rahul.rkt007@gmail.com',
-                subject: "❌ Jenkins FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                subject: "Jenkins FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: """Hi Rahul,
 
-Selenium execution FAILED ❌
+Selenium execution FAILED.
 
-Please check console logs and reports.
+Check console logs.
 
 Build URL:
 ${env.BUILD_URL}
