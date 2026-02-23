@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven'
+        jdk 'JDK17'
+    }
+
     parameters {
         choice(
             name: 'TEST_TYPE',
@@ -15,14 +20,7 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/Rkt007/flipcart_POM_Selenium_Eclipse.git'
-            }
-        }
-
-        stage('Verify Java & Maven') {
+        stage('Verify Tools') {
             steps {
                 bat 'java -version'
                 bat 'mvn -version'
@@ -58,60 +56,10 @@ pipeline {
     }
 
     post {
-
         always {
             junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
-
             archiveArtifacts artifacts: 'target/surefire-reports/**', allowEmptyArchive: true
             archiveArtifacts artifacts: 'test-output/**', allowEmptyArchive: true
-        }
-
-        success {
-            emailext(
-                to: 'rahul.rkt007@gmail.com',
-                subject: "Jenkins SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """Hi Rahul,
-
-Selenium build SUCCESS.
-
-All tests passed.
-
-Build URL:
-${env.BUILD_URL}
-"""
-            )
-        }
-
-        unstable {
-            emailext(
-                to: 'rahul.rkt007@gmail.com',
-                subject: "Jenkins UNSTABLE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """Hi Rahul,
-
-Some tests failed.
-
-Please check TestNG report.
-
-Build URL:
-${env.BUILD_URL}
-"""
-            )
-        }
-
-        failure {
-            emailext(
-                to: 'rahul.rkt007@gmail.com',
-                subject: "Jenkins FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """Hi Rahul,
-
-Selenium execution FAILED.
-
-Check console logs.
-
-Build URL:
-${env.BUILD_URL}
-"""
-            )
         }
     }
 }
