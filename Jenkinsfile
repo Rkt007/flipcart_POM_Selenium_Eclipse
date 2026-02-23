@@ -5,7 +5,7 @@ pipeline {
             image '102783063324.dkr.ecr.eu-north-1.amazonaws.com/flipcart-pom-framework-selenium-eclipse:latest'
             args '-u root --ipc=host --entrypoint=""'
             reuseNode true
-            alwaysPull true
+            alwaysPull false
         }
     }
 
