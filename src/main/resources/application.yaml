@@ -1,0 +1,7 @@
+application:
+  name: flipcartTest
+  package: flipcartTest.flipcartTest
+spring:
+  application:
+    name: ${application.name}
+
