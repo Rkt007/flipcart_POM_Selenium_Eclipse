@@ -2,7 +2,7 @@ pipeline {
 
     agent {
         docker {
-           image '102783063324.dkr.ecr.eu-north-1.amazonaws.com/flipcart-pom-framework-selenium-eclipse:latest'
+            image '102783063324.dkr.ecr.eu-north-1.amazonaws.com/flipcart-pom-framework-selenium-eclipse:latest'
             args '-u root --ipc=host --entrypoint=""'
             reuseNode true
         }
@@ -10,6 +10,7 @@ pipeline {
 
     options {
         timestamps()
+        skipDefaultCheckout(true)
     }
 
     triggers {
@@ -57,9 +58,9 @@ pipeline {
                         def day = sh(script: "date +%u", returnStdout: true).trim()
 
                         if (day == "6") {
-                            env.MVN_COMMAND = "mvn test -Dgroups=regression"
+                            env.MVN_COMMAND = "mvn -B -ntp test -Dgroups=regression"
                         } else {
-                            env.MVN_COMMAND = "mvn test -Dgroups=smoke"
+                            env.MVN_COMMAND = "mvn -B -ntp test -Dgroups=smoke"
                         }
 
                     } else {
@@ -67,15 +68,17 @@ pipeline {
                         echo "Manual run detected"
 
                         if (params.TEST_TYPE == "smoke") {
-                            env.MVN_COMMAND = "mvn test -Dgroups=smoke"
+                            env.MVN_COMMAND = "mvn -B -ntp test -Dgroups=smoke"
                         }
                         else if (params.TEST_TYPE == "regression") {
-                            env.MVN_COMMAND = "mvn test -Dgroups=regression"
+                            env.MVN_COMMAND = "mvn -B -ntp test -Dgroups=regression"
                         }
                         else {
-                            env.MVN_COMMAND = "mvn test"
+                            env.MVN_COMMAND = "mvn -B -ntp test"
                         }
                     }
+
+                    echo "Final Maven Command: ${env.MVN_COMMAND}"
                 }
             }
         }
@@ -85,17 +88,11 @@ pipeline {
                 script {
 
                     def exitCode = sh(
-                        script: """
-                            echo "Running: ${env.MVN_COMMAND}"
-                            ${env.MVN_COMMAND}
-                        """,
+                        script: "${env.MVN_COMMAND}",
                         returnStatus: true
                     )
 
-                    sh """
-                        echo "Generating Allure Report..."
-                        mvn allure:report || true
-                    """
+                    sh "mvn -B -ntp allure:report || true"
 
                     if (exitCode != 0) {
                         currentBuild.result = 'FAILURE'
@@ -106,21 +103,21 @@ pipeline {
 
         stage('Upload Allure Report to S3') {
             steps {
-                sh '''
+                sh """
                     echo "Uploading Allure report to S3..."
                     aws s3 sync target/site/allure-maven-plugin/ \
                         s3://${S3_BUCKET}/${BUILD_FOLDER}/ --delete
-                '''
+                """
             }
         }
     }
 
     post {
         always {
-            echo "=============================="
-            echo "Allure report available at:"
-            echo "https://${env.S3_BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${env.BUILD_FOLDER}/index.html"
-            echo "=============================="
+            echo "=========================================="
+            echo "Allure Report URL:"
+            echo "https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${BUILD_FOLDER}/index.html"
+            echo "=========================================="
         }
     }
 }
