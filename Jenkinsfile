@@ -3,7 +3,7 @@ pipeline {
     agent {
         docker {
             image '102783063324.dkr.ecr.eu-north-1.amazonaws.com/flipcart-pom-framework-selenium-eclipse:latest'
-            args '-u root --ipc=host --entrypoint=""'
+            args '--ipc=host --entrypoint=""'
             reuseNode true
             alwaysPull true
         }
@@ -40,6 +40,12 @@ pipeline {
 
     stages {
 
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 checkout scm
@@ -72,6 +78,8 @@ pipeline {
                             env.MVN_COMMAND = "mvn -B -q clean test"
                         }
                     }
+
+                    echo "Running: ${env.MVN_COMMAND}"
                 }
             }
         }
@@ -85,7 +93,7 @@ pipeline {
                         returnStatus: true
                     )
 
-                    // Allure report generate
+                    // Generate Allure Report quietly
                     sh "mvn -B -q allure:report || true"
 
                     if (exitCode != 0) {
@@ -98,8 +106,12 @@ pipeline {
         stage('Upload Allure Report to S3') {
             steps {
                 sh """
-                    aws s3 sync target/site/allure-maven-plugin/ \
-                    s3://${S3_BUCKET}/${BUILD_FOLDER}/ --delete || true
+                    if [ -d target/site/allure-maven-plugin ]; then
+                        aws s3 sync target/site/allure-maven-plugin/ \
+                        s3://${S3_BUCKET}/${BUILD_FOLDER}/ --delete
+                    else
+                        echo "Allure report folder not found. Skipping upload."
+                    fi
                 """
             }
         }
