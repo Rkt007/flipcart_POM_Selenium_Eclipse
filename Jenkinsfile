@@ -3,7 +3,7 @@ pipeline {
     agent {
         docker {
             image '102783063324.dkr.ecr.eu-north-1.amazonaws.com/flipcart-pom-framework-selenium-eclipse:latest'
-            args '--ipc=host --entrypoint=""'
+            args '-u root --ipc=host --entrypoint=""'
             reuseNode true
             alwaysPull true
         }
@@ -12,6 +12,7 @@ pipeline {
     options {
         timestamps()
         skipDefaultCheckout(true)
+        buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
     triggers {
@@ -36,13 +37,16 @@ pipeline {
         AWS_REGION = "eu-north-1"
         AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+
+        // 🔥 Force disable DEBUG logs globally
+        JAVA_TOOL_OPTIONS = "-Dlogging.level.root=ERROR -Dlogging.level.org.apache.hc=ERROR -Dlogging.level.org.apache.http=ERROR -Dorg.slf4j.simpleLogger.defaultLogLevel=error"
     }
 
     stages {
 
         stage('Clean Workspace') {
             steps {
-                cleanWs()
+                deleteDir()
             }
         }
 
@@ -61,21 +65,21 @@ pipeline {
                         def day = sh(script: "date +%u", returnStdout: true).trim()
 
                         if (day == "6") {
-                            env.MVN_COMMAND = "mvn -B -q clean test -Dgroups=regression"
+                            env.MVN_COMMAND = "mvn -B -q clean test -Dgroups=regression -Dlogging.level.root=ERROR"
                         } else {
-                            env.MVN_COMMAND = "mvn -B -q clean test -Dgroups=smoke"
+                            env.MVN_COMMAND = "mvn -B -q clean test -Dgroups=smoke -Dlogging.level.root=ERROR"
                         }
 
                     } else {
 
                         if (params.TEST_TYPE == "smoke") {
-                            env.MVN_COMMAND = "mvn -B -q clean test -Dgroups=smoke"
+                            env.MVN_COMMAND = "mvn -B -q clean test -Dgroups=smoke -Dlogging.level.root=ERROR"
                         }
                         else if (params.TEST_TYPE == "regression") {
-                            env.MVN_COMMAND = "mvn -B -q clean test -Dgroups=regression"
+                            env.MVN_COMMAND = "mvn -B -q clean test -Dgroups=regression -Dlogging.level.root=ERROR"
                         }
                         else {
-                            env.MVN_COMMAND = "mvn -B -q clean test"
+                            env.MVN_COMMAND = "mvn -B -q clean test -Dlogging.level.root=ERROR"
                         }
                     }
 
@@ -93,7 +97,7 @@ pipeline {
                         returnStatus: true
                     )
 
-                    // Generate Allure Report quietly
+                    // Generate Allure quietly
                     sh "mvn -B -q allure:report || true"
 
                     if (exitCode != 0) {
@@ -105,14 +109,15 @@ pipeline {
 
         stage('Upload Allure Report to S3') {
             steps {
-                sh """
+                sh '''
                     if [ -d target/site/allure-maven-plugin ]; then
+                        echo "Uploading Allure report to S3..."
                         aws s3 sync target/site/allure-maven-plugin/ \
                         s3://${S3_BUCKET}/${BUILD_FOLDER}/ --delete
                     else
                         echo "Allure report folder not found. Skipping upload."
                     fi
-                """
+                '''
             }
         }
     }
