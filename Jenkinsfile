@@ -15,21 +15,6 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
-    triggers {
-        cron('''
-            H 9 * * 1-5
-            H 11 * * 6
-        ''')
-    }
-
-    parameters {
-        choice(
-            name: 'TEST_TYPE',
-            choices: ['smoke', 'regression', 'all'],
-            description: 'Select which test suite to run'
-        )
-    }
-
     environment {
         S3_BUCKET = "rahul-selenium-reports-2026"
         BUILD_FOLDER = "build-${BUILD_NUMBER}"
@@ -41,13 +26,9 @@ pipeline {
 
     stages {
 
-        stage('Force Clean Workspace') {
+        stage('Clean Workspace Safely') {
             steps {
-                sh '''
-                    echo "Force cleaning workspace..."
-                    chmod -R 777 /var/jenkins_home/workspace || true
-                    rm -rf /var/jenkins_home/workspace/* || true
-                '''
+                cleanWs(deleteDirs: true, disableDeferredWipeout: true)
             }
         }
 
@@ -64,7 +45,7 @@ pipeline {
             }
         }
 
-        stage('Upload Allure Report to S3') {
+        stage('Upload Allure Report') {
             steps {
                 sh '''
                     if [ -d target/site/allure-maven-plugin ]; then
