@@ -5,7 +5,7 @@ pipeline {
             image '102783063324.dkr.ecr.eu-north-1.amazonaws.com/flipcart-pom-framework-selenium-eclipse:latest'
             args '--ipc=host'
             reuseNode true
-            alwaysPull false
+            alwaysPull true
         }
     }
 
@@ -40,8 +40,8 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh "mvn -B -q clean test"
-                sh "mvn -B -q allure:report || true"
+                sh "mvn -B clean test"
+                sh "mvn -B allure:report || true"
             }
         }
 
@@ -58,17 +58,13 @@ pipeline {
     }
 
     post {
-    always {
-        script {
-            if (env.S3_BUCKET) {
+        always {
+            script {
                 echo "=========================================="
                 echo "Allure Report URL:"
                 echo "https://${env.S3_BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${env.BUILD_FOLDER}/index.html"
                 echo "=========================================="
-            } else {
-                echo "Build failed before environment initialization."
             }
         }
     }
-}
 }
