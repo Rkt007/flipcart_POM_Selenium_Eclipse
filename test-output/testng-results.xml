@@ -2,19 +2,23 @@
 <testng-results ignored="0" total="1" passed="1" failed="0" skipped="0">
   <reporter-output>
   </reporter-output>
-  <suite started-at="2026-02-23T12:55:43 IST" name="Default suite" finished-at="2026-02-23T12:56:47 IST" duration-ms="63948">
+  <suite started-at="2026-02-24T17:22:22 IST" name="Default suite" finished-at="2026-02-24T17:23:33 IST" duration-ms="70431">
     <groups>
     </groups>
-    <test started-at="2026-02-23T12:55:43 IST" name="Default test" finished-at="2026-02-23T12:56:47 IST" duration-ms="63948">
+    <test started-at="2026-02-24T17:22:22 IST" name="Default test" finished-at="2026-02-24T17:23:33 IST" duration-ms="70431">
       <class name="TestCases.TestClass">
-        <test-method is-config="true" signature="setup()[pri:0, instance:TestCases.TestClass@2eee3069]" started-at="2026-02-23T12:55:43 IST" name="setup" finished-at="2026-02-23T12:55:47 IST" duration-ms="4222" status="PASS">
+        <test-method is-config="true" signature="setup()[pri:0, instance:TestCases.TestClass@5629510]" started-at="2026-02-24T17:22:22 IST" name="setup" finished-at="2026-02-24T17:22:34 IST" duration-ms="11645" status="PASS">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setup -->
-        <test-method signature="verifySearchAndSelectProduct()[pri:0, instance:TestCases.TestClass@2eee3069]" started-at="2026-02-23T12:55:47 IST" name="verifySearchAndSelectProduct" finished-at="2026-02-23T12:56:47 IST" duration-ms="59623" status="PASS">
+        <test-method signature="verifySearchAndSelectProduct()[pri:0, instance:TestCases.TestClass@5629510]" started-at="2026-02-24T17:22:34 IST" name="verifySearchAndSelectProduct" finished-at="2026-02-24T17:23:32 IST" duration-ms="58360" status="PASS">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- verifySearchAndSelectProduct -->
+        <test-method is-config="true" signature="teardown()[pri:0, instance:TestCases.TestClass@5629510]" started-at="2026-02-24T17:23:32 IST" name="teardown" finished-at="2026-02-24T17:23:33 IST" duration-ms="366" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- teardown -->
       </class> <!-- TestCases.TestClass -->
     </test> <!-- Default test -->
   </suite> <!-- Default suite -->

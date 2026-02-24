@@ -47,12 +47,27 @@ public class SearchResultsPage {
     /*
      * printAllProductTitles()
      * -----------------------
-     * Prints all product names in console
+     * Prints a limited number of product names at DEBUG and a concise INFO summary
      */
     public void printAllProductTitles() {
         if (productTitles == null) return;
-        for (WebElement el : productTitles) {
-            logger.info(el.getText());
+
+        int total = productTitles.size();
+        int limit = Math.min(total, 10); // limit number printed to avoid huge logs
+
+        for (int i = 0; i < limit; i++) {
+            try {
+                String text = productTitles.get(i).getText();
+                logger.debug("Product[{}]: {}", i, text);
+            } catch (Exception e) {
+                logger.debug("Failed to read product title at index {}: {}", i, e.getMessage());
+            }
+        }
+
+        if (total > limit) {
+            logger.info("Displayed {} of {} product titles (see debug logs for details)", limit, total);
+        } else {
+            logger.info("Displayed all {} product titles", total);
         }
     }
     

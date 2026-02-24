@@ -33,7 +33,6 @@ public class BaseClass {
     public void setup() {
 
         logger.info("Initializing WebDriver for browser: {}", browser);
-        System.out.println("[BaseClass] Initializing WebDriver for browser: " + browser);
 
         // Detect if running inside Jenkins/Docker
         boolean isCI = System.getenv("JENKINS_HOME") != null;
@@ -95,14 +94,12 @@ public class BaseClass {
         driver.get(url);
 
         logger.info("Navigated to URL: {}", url);
-        System.out.println("[BaseClass] Navigated to URL: " + url);
     }
 
     @AfterClass
     public void teardown() {
 
         logger.info("Tearing down WebDriver");
-        System.out.println("[BaseClass] Tearing down WebDriver");
 
         if (driver != null) {
             driver.quit();

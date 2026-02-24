@@ -20,6 +20,7 @@ public class TestListener implements ITestListener {
 
     private static final String LOG_DIR = System.getProperty("user.dir") + File.separator + "Logs";
     private static final String SCREENSHOT_DIR = System.getProperty("user.dir") + File.separator + "Screenshots";
+    private static final int MAX_PAGE_SOURCE_BYTES = 200 * 1024; // 200 KB
 
     private String timestamp() {
         return new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
@@ -45,13 +46,33 @@ public class TestListener implements ITestListener {
                 // ignore
             }
 
-            // save page source
+            // save page source (truncated to safe size)
             try {
                 String pageSource = driver.getPageSource();
+                byte[] bytes = pageSource == null ? new byte[0] : pageSource.getBytes(StandardCharsets.UTF_8);
+
+                boolean truncated = false;
+                if (bytes.length > MAX_PAGE_SOURCE_BYTES) {
+                    // truncate safely by converting back to string with proper char boundary
+                    String truncatedStr = new String(bytes, 0, MAX_PAGE_SOURCE_BYTES, StandardCharsets.UTF_8);
+                    pageSource = truncatedStr + "\n<!-- PAGE SOURCE TRUNCATED: original size=" + bytes.length + " bytes -->";
+                    truncated = true;
+                }
+
                 File out = new File(LOG_DIR + File.separator + name + "-" + time + ".html");
                 try (FileOutputStream fos = new FileOutputStream(out)) {
                     fos.write(pageSource.getBytes(StandardCharsets.UTF_8));
                 }
+
+                // Optionally, if truncated, create a small metadata file
+                if (truncated) {
+                    File meta = new File(LOG_DIR + File.separator + name + "-" + time + ".meta.txt");
+                    String msg = "Original page source size: " + bytes.length + " bytes. Saved truncated to " + MAX_PAGE_SOURCE_BYTES + " bytes.";
+                    try (FileOutputStream m = new FileOutputStream(meta)) {
+                        m.write(msg.getBytes(StandardCharsets.UTF_8));
+                    }
+                }
+
             } catch (IOException e) {
                 // ignore
             }
