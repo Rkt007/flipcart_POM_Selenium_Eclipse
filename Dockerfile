@@ -2,8 +2,13 @@ FROM maven:3.9.6-eclipse-temurin-17
 
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y wget curl unzip gnupg2 \
+# Install system dependencies + Chrome properly
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    unzip \
+    gnupg \
+    ca-certificates \
     fonts-liberation \
     libasound2 \
     libatk-bridge2.0-0 \
@@ -18,13 +23,20 @@ RUN apt-get update && \
     libxdamage1 \
     libxrandr2 \
     libgbm1 \
-    libgtk-3-0 && \
+    libgtk-3-0 \
+    --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
-    apt-get update && \
+# Add Google Chrome repository correctly
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | \
+    gpg --dearmor -o /usr/share/keyrings/google-linux.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+    > /etc/apt/sources.list.d/google-chrome.list
+
+# Install Google Chrome
+RUN apt-get update && \
     apt-get install -y google-chrome-stable && \
+    google-chrome --version && \
     rm -rf /var/lib/apt/lists/*
 
 COPY . .
