@@ -1,13 +1,6 @@
 pipeline {
 
-    agent {
-        docker {
-            image '102783063324.dkr.ecr.eu-north-1.amazonaws.com/flipcart-pom-framework-selenium-eclipse:latest'
-            args '--ipc=host'
-            reuseNode true
-            alwaysPull false
-        }
-    }
+    agent any
 
     options {
         timestamps()
@@ -19,9 +12,6 @@ pipeline {
         S3_BUCKET = "rahul-selenium-reports-2026"
         BUILD_FOLDER = "build-${BUILD_NUMBER}"
         AWS_DEFAULT_REGION = "eu-north-1"
-        AWS_REGION = "eu-north-1"
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
     }
 
     stages {
@@ -38,10 +28,25 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
+        stage('Login to ECR using IAM Role') {
             steps {
-                sh "mvn -B clean test"
-                sh "mvn -B allure:report || true"
+                sh '''
+                    aws ecr get-login-password --region eu-north-1 | \
+                    docker login --username AWS --password-stdin 102783063324.dkr.ecr.eu-north-1.amazonaws.com
+                '''
+            }
+        }
+
+        stage('Run Inside Docker') {
+            steps {
+                script {
+                    docker.image('102783063324.dkr.ecr.eu-north-1.amazonaws.com/flipcart-pom-framework-selenium-eclipse:latest')
+                          .inside('--ipc=host') {
+
+                        sh "mvn -B clean test"
+                        sh "mvn -B allure:report || true"
+                    }
+                }
             }
         }
 
@@ -62,7 +67,7 @@ pipeline {
             script {
                 echo "=========================================="
                 echo "Allure Report URL:"
-                echo "https://${env.S3_BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${env.BUILD_FOLDER}/index.html"
+                echo "https://${env.S3_BUCKET}.s3.${env.AWS_DEFAULT_REGION}.amazonaws.com/${env.BUILD_FOLDER}/index.html"
                 echo "=========================================="
             }
         }
